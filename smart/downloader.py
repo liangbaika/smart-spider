@@ -29,31 +29,20 @@ class BaseDown(ABC):
         pass
 
 
-# class RequestsDown(BaseDown):
-#     def fetch(self, request: Request) -> Response:
-#         import requests
-#         res = requests.get(request.url,
-#                            timeout=request.timeout or 3,
-#                            )
-#         response = Response(body=res.content, request=request,
-#                             headers=res.headers,
-#                             cookies=res.cookies,
-#                             status=res.status_code)
-#         return response
-
-
 class AioHttpDown(BaseDown):
 
     async def fetch(self, request: Request) -> Response:
-        async with aiohttp.ClientSession() as clicnt:
-            resp = await clicnt.request(request.method,
-                                        request.url,
-                                        timeout=request.timeout or 10,
-                                        headers=request.header or {},
-                                        cookies=request.cookies or {},
-                                        data=request.data or {},
-                                        **request.extras or {}
-                                        )
+        session = None
+        try:
+            session = request.session or aiohttp.ClientSession()
+            resp = await session.request(request.method,
+                                         request.url,
+                                         timeout=request.timeout or 10,
+                                         headers=request.header or {},
+                                         cookies=request.cookies or {},
+                                         data=request.data or {},
+                                         **request.extras or {}
+                                         )
             byte_content = await resp.read()
             headers = {}
             if resp.headers:
@@ -63,6 +52,9 @@ class AioHttpDown(BaseDown):
                                 headers=headers,
                                 cookies=resp.cookies
                                 )
+        finally:
+            if request.session is None and session:
+                await session.close()
         return response
 
 
@@ -78,6 +70,7 @@ class Downloader:
         # the real to fetch resource from internet
         self.downer = downer
         self.log.info(f" downer loaded {self.downer.__class__.__name__}")
+
     async def download(self, request: Request):
         spider = request.__spider__
         max_retry = spider.cutome_setting_dict.get("req_max_retry") or gloable_setting_dict.get(

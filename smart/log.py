@@ -14,7 +14,7 @@ from traceback import format_exception
 from smart.setting import gloable_setting_dict
 
 LOG_FORMAT = "process %(process)d|thread %(threadName)s|%(asctime)s|%(filename)s|%(funcName)s|line:%(lineno)d|%(levelname)s: %(message)s"
-CONSOLE_LOG_FORMAT = "%(colorName)sprocess %(process)d|thread %(threadName)s|%(asctime)s|%(filename)s|%(funcName)s|line:%(lineno)d|%(levelname)s: %(message)s %(colorNameSuffix)s"
+CONSOLE_LOG_FORMAT = f"%(colorName)s{LOG_FORMAT} %(colorNameSuffix)s"
 
 PRINT_EXCEPTION_DETAILS = True
 
@@ -78,10 +78,9 @@ class MyStreamHandler(logging.StreamHandler):
     def emit(self, record):
         if record.levelname in ["ERROR", "CRITICAL"]:
             record.colorName = "\033[0;31m "
-            record.colorNameSuffix = " \033[0m"
         else:
             record.colorName = "\033[0;34m "
-            record.colorNameSuffix = " \033[0m"
+        record.colorNameSuffix = " \033[0m"
         super().emit(record)
 
 

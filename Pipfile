@@ -4,30 +4,22 @@ url = "https://mirrors.163.com/pypi/simple/"
 verify_ssl = true
 
 [dev-packages]
-#mypy = "*"
-#fastapi = "*"
-#uvicorn = "*"
-#jinja2 = "*"
 pytest = "*"
-
+mkdocs = "*"
+pymysql = "*"
+aiomysql = "*"
+pyppeteer = "*"
+ruia = "*"
+ruia-ua = "*"
+requests = "*"
+fastapi = "*"
 [packages]
 aiohttp = "*"
 lxml = "*"
-#bitarray = "*"
-requests = "*"
-fastapi = "*"
 uvicorn = {extras = ["standard"],version = "*"}
 python-multipart = "*"
-ruia = "*"
-ruia-ua = "*"
 jsonpath = "*"
 parsel = "*"
-pytest = "*"
-pyppeteer = "*"
-pymysql = "*"
-aiomysql = "*"
-mkdocs = "*"
 cchardet = "*"
-
 [requires]
 python_version = "3.7"

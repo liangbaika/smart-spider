@@ -23,6 +23,14 @@ from smart.setting import gloable_setting_dict
 from smart.spider import Spider
 from smart.tool import is_valid_url
 
+try:
+    # uvloop  performance is better on  linux..
+    import uvloop
+
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except ImportError:
+    pass
+
 
 class CrawStater:
     __version = "0.1.0"
@@ -32,8 +40,6 @@ class CrawStater:
             # avoid a certain extent: too many files error
             loop = loop or asyncio.ProactorEventLoop()
         else:
-            # uvloop  performance is better on  linux..
-            # todo use  uvloop
             self.loop = loop or asyncio.new_event_loop()
         thread_pool_max_size = gloable_setting_dict.get(
             "thread_pool_max_size", 30)
@@ -91,7 +97,6 @@ class CrawStater:
                     self.spider_names.append(_spider.name)
             self._run()
 
-
     def stop(self):
         self.log.info(f'warning stop be called,  {",".join(self.spider_names)} will stop ')
         for core in self.cores:
@@ -128,8 +133,7 @@ class CrawStater:
         except BaseException as e3:
             self.log.error(f" in loop, occured BaseException e {e3} ", exc_info=True)
 
-        self.log.info(f'craw succeed {",".join(self.spider_names)} ended.. it cost {round(time.time() - start,3)} s')
-
+        self.log.info(f'craw succeed {",".join(self.spider_names)} ended.. it cost {round(time.time() - start, 3)} s')
 
     def _print_info(self):
         self.log.info("good luck!")
@@ -148,9 +152,8 @@ class CrawStater:
         )
         self.log.info(" \r\n smart-spider-framework"
                       f"\r\n os: {sys.platform}"
-                      " \r\n author: liangbaikai"
-                      " \r\n emial:1144388620@qq.com"
-                      " \r\n version: 0.1.0"
+                      " \r\n author: liangbaikai<1144388620@qq.com>"
+                      f" \r\n version: {self.__version}"
                       " \r\n proverbs: whatever is worth doing is worth doing well."
                       )
 

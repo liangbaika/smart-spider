@@ -8,12 +8,9 @@
 import asyncio
 import importlib
 import inspect
-import time
-import traceback
 import uuid
 from asyncio import Lock
 from collections import deque
-from contextlib import suppress
 from typing import Dict
 
 from smart.log import log
@@ -101,9 +98,7 @@ class Engine:
 
     async def start(self):
         self.spider.on_start()
-        # self.spider
         self.request_generator_queue.append((self.spider, iter(self.spider)))
-        # self.request_generator_queue.append( iter(self.spider))
         # core  implenment
         while not self.stop:
             # paused
@@ -120,7 +115,6 @@ class Engine:
 
             request = self.scheduler.get()
             can_stop = self._check_can_stop(request)
-            # if request is None and not self.task_dict:
             if can_stop:
                 # there is no request and the task has been completed.so ended
                 self.log.debug(
@@ -134,7 +128,7 @@ class Engine:
 
             if resp is None:
                 # let the_downloader can be scheduled, test 0.001-0.0006 is better
-                await asyncio.sleep(0.0005)
+                await asyncio.sleep(0.005)
                 continue
 
             custome_callback = resp.request.callback
@@ -148,8 +142,9 @@ class Engine:
 
         self.spider.state = "closed"
         self.spider.on_close()
-        self.log.debug(f" engine stoped..")
+        # wait some resource to freed
         await asyncio.sleep(0.15)
+        self.log.debug(f" engine stoped..")
 
     def pause(self):
         self.log.info(f" out called pause.. so engine will pause.. ")

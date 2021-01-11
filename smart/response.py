@@ -85,11 +85,22 @@ class Response:
         return self.body
 
     @property
+    def content_type(self) -> Optional[str]:
+        if self.headers:
+            for key in self.headers.keys():
+                if "content_type" == key.lower():
+                    return self.headers.get(key)
+        return None
+
+    @property
     def text(self) -> Optional[str]:
         if not self.body:
             return None
         # if request encoding is none and then  auto detect encoding
         self.request.encoding = self.encoding or cchardet.detect(self.body)["encoding"]
+        if self.request.encoding is None:
+            raise UnicodeDecodeError(
+                "body can not detect an encoding,it may be a binary data or you can set request.encoding to try it  ")
         # minimum possible may be UnicodeDecodeError
         return self.body.decode(self.encoding)
 

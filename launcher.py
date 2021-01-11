@@ -9,6 +9,7 @@ from smart.pipline import Piplines
 from smart.runer import CrawStater
 from spiders.db.sanicdb import SanicDB
 from spiders.govs import GovsSpider, ArticelItem
+from spiders.image_spider import ImageSpider
 from spiders.ipspider2 import IpSpider3, GovSpider, IpSpider, ApiSpider
 from spiders.js.js_spider import JsSpider, Broswer
 from spiders.json_spider import JsonSpider
@@ -23,7 +24,7 @@ async def do_pip(spider_ins, item):
 
 
 @piplinestest.pipline(2)
-def do_pip2(spider_ins, item):
+def pip2(spider_ins, item):
     print(f"我是item2 {item.results}")
     return item
 
@@ -62,4 +63,4 @@ if __name__ == '__main__':
     spider1 = GovsSpider()
     spider2 = JsonSpider()
     js_spider = JsSpider()
-    starter.run_many([IpSpider()], middlewire=middleware2, pipline=piplinestest)
+    starter.run_many([spider1], middlewire=middleware2, pipline=piplinestest)

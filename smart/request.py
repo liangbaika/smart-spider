@@ -5,8 +5,8 @@
 # Date:      2020/12/21
 # Desc:      there is a python file description
 # ------------------------------------------------------------------
-from dataclasses import dataclass, field, InitVar
-from typing import Callable
+from dataclasses import dataclass, InitVar
+from typing import Callable, Any
 
 from smart.tool import is_valid_url
 
@@ -15,6 +15,7 @@ from smart.tool import is_valid_url
 class Request:
     url: InitVar[str]
     callback: Callable = None
+    session: Any = None
     method: str = 'get'
     timeout: float = None
     # if None will auto detect encoding
@@ -33,6 +34,10 @@ class Request:
     _retry: int = 0
 
     def __post_init__(self, url):
+        if url is None or url == '':
+            raise ValueError("request url can not be empty ")
+        if url and not (url.startswith("http") or url.startswith("ftp")):
+            url = "http://" + url
         if is_valid_url(url):
             self.url = url
         else:
