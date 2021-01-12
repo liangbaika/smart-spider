@@ -33,6 +33,7 @@ class AioHttpDown(BaseDown):
 
     async def fetch(self, request: Request) -> Response:
         session = None
+        resp = None
         try:
             session = request.session or aiohttp.ClientSession()
             resp = await session.request(request.method,
@@ -53,8 +54,11 @@ class AioHttpDown(BaseDown):
                                 cookies=resp.cookies
                                 )
         finally:
+            if resp:
+                resp.release()
             if request.session is None and session:
                 await session.close()
+
         return response
 
 

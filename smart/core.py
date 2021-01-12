@@ -128,7 +128,7 @@ class Engine:
 
             if resp is None:
                 # let the_downloader can be scheduled, test 0.001-0.0006 is better
-                await asyncio.sleep(0.005)
+                await asyncio.sleep(0.0005)
                 continue
 
             custome_callback = resp.request.callback

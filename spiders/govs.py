@@ -5,7 +5,10 @@
 # Date:      2021/1/6
 # Desc:      there is a python file description
 # ------------------------------------------------------------------
+import asyncio
 import traceback
+
+import aiohttp
 
 from smart.field import HtmlField
 from smart.item import Item
@@ -27,6 +30,7 @@ class GovsSpider(Spider):
         "http://www.nea.gov.cn/policy/jd.htm"
     ]
 
+
     def parse(self, response: Response):
         selects_detail_urls = response.xpath(
             '//*[@class="list"]//li//a/@href').getall()
@@ -45,3 +49,5 @@ class GovsSpider(Spider):
 
     def on_exception_occured(self, e: Exception):
         print(e)
+
+
