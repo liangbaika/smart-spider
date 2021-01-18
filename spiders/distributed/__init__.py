@@ -56,6 +56,7 @@ class RedisSchuler(BaseSchedulerContainer):
 class RedisBaseDuplicateFilter(BaseDuplicateFilter):
     pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True)
 
+
     def __init__(self):
         self.redis = redis.Redis(connection_pool=self.pool)
         self.filterset_name = "smart_spider_redis_repeat_set"
