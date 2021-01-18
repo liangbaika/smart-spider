@@ -135,6 +135,12 @@ if __name__ == '__main__':
     spider1 = GovsSpider()
     spider2 = JsonSpider()
     js_spider = JsSpider()
+    gloable_setting_dict.update(
+        duplicate_filter_class="spiders.distributed.RedisBaseDuplicateFilter",
+        scheduler_container_class="spiders.distributed.RedisSchuler",
+        pipline_is_paralleled=1
+    )
+
     spider = IpSpider()
     starter.run_many([spider], middlewire=middleware2, pipline=piplinestest)
     # starter.run_many([spider])

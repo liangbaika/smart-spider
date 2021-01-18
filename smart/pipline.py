@@ -3,7 +3,7 @@
 # Name:      middlewire
 # Author:    liangbaikai
 # Date:      2020/12/28
-# Desc:      there is a python file description
+# Desc:      there is a  item Piplines
 # ------------------------------------------------------------------
 from copy import copy
 from functools import wraps
@@ -11,11 +11,21 @@ from typing import Union, Callable
 
 
 class Piplines:
+    """
+    item Piplines pipline容器对象
+    """
+
     def __init__(self):
         # item piplines
         self.piplines = []
 
     def pipline(self, order_or_func: Union[int, Callable]):
+        """
+        一个 item pipline
+        :param order_or_func: 优先级或函数
+        :return:
+        """
+
         def outWrap(func):
             """
             Define a Decorate to be called before a request.

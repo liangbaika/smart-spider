@@ -3,7 +3,7 @@
 # Name:      setting
 # Author:    liangbaikai
 # Date:      2021/1/4
-# Desc:      there is a python file description
+# Desc:      gloable seeting
 # ------------------------------------------------------------------
 
 gloable_setting_dict = {

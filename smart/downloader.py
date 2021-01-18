@@ -3,7 +3,7 @@
 # Name:      downloader
 # Author:    liangbaikai
 # Date:      2020/12/21
-# Desc:      there is a python file description
+# Desc:      there is a downloader
 # ------------------------------------------------------------------
 import asyncio
 import inspect

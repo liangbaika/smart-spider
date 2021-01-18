@@ -29,6 +29,7 @@ from smart.signal import reminder, Reminder
 class Engine:
     def __init__(self, spider, middlewire=None, pipline: Piplines = None):
         self.reminder = reminder
+        self.log = log
         self.lock = None
         self.task_dict: Dict[str, asyncio.Task] = {}
         self.pip_task_dict: Dict[str, asyncio.Task] = {}
@@ -48,7 +49,6 @@ class Engine:
                                      downer=net_download_class())
         self.request_generator_queue = deque()
         self.stop = False
-        self.log = log
         self.condition = asyncio.Condition()
         self.item_queue = asyncio.Queue()
         pipline_is_paralleled = self.spider.cutome_setting_dict.get("pipline_is_paralleled")
@@ -62,6 +62,7 @@ class Engine:
             key)
         _module = importlib.import_module(".".join(class_str.split(".")[:-1]))
         _class = getattr(_module, class_str.split(".")[-1])
+        self.log.info("_class:"+_class.__name__)
         return _class
 
     def iter_request(self):
@@ -115,7 +116,7 @@ class Engine:
         self.reminder.go(Reminder.engin_start, self)
 
         self.request_generator_queue.append((self.spider, iter(self.spider)))
-        works = [asyncio.ensure_future(self.work()) for i in range(10)]
+        works = [asyncio.ensure_future(self.work()) for i in range(20)]
 
         i = 0
         while not self.stop:
