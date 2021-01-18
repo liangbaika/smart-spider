@@ -49,6 +49,11 @@ class Engine:
         self.stop = False
         self.log = log
         self.condition = asyncio.Condition()
+        pipline_is_paralleled = self.spider.cutome_setting_dict.get("pipline_is_paralleled")
+        pipline_is_paralleled = gloable_setting_dict.get(
+            "pipline_is_paralleled") if pipline_is_paralleled is None else pipline_is_paralleled
+        self.pipline_is_paralleled = pipline_is_paralleled
+        self.work_tasks = []
 
     def _get_dynamic_class_setting(self, key):
         class_str = self.spider.cutome_setting_dict.get(
@@ -107,12 +112,38 @@ class Engine:
         self.spider.on_start()
         self.reminder.go(Reminder.spider_start, self.spider)
         self.reminder.go(Reminder.engin_start, self)
-
         self.request_generator_queue.append((self.spider, iter(self.spider)))
-        asyncio.create_task(self.work())
-        pipline_is_paralleled = self.spider.cutome_setting_dict.get("pipline_is_paralleled")
-        pipline_is_paralleled = gloable_setting_dict.get(
-            "pipline_is_paralleled") if pipline_is_paralleled is None else pipline_is_paralleled
+        workers = [
+            asyncio.ensure_future(self._start())
+            for i in range(1000)
+        ]
+        for worker in workers:
+            self.log.info(f"Worker started: {id(worker)}")
+        await asyncio.sleep(1)
+        await self.scheduler.scheduler_container.url_queue.join()
+        await self.cancel_all_tasks()
+        self.spider.state = "closed"
+        self.reminder.go(Reminder.spider_close, self.spider)
+        self.spider.on_close()
+        # wait some resource to freed
+        await asyncio.sleep(0.2)
+        self.reminder.go(Reminder.engin_close, self)
+        self.log.debug(f" engine stoped..")
+
+    @staticmethod
+    async def cancel_all_tasks():
+        """
+        Cancel all tasks
+        :return:
+        """
+        tasks = []
+        for task in asyncio.Task.all_tasks():
+            if task is not asyncio.tasks.Task.current_task():
+                tasks.append(task)
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _start(self):
         while not self.stop:
             # paused
             if self.lock and self.lock.locked():
@@ -121,57 +152,27 @@ class Engine:
             request_or_item = next(self.iter_request())
             if isinstance(request_or_item, Request):
                 self.scheduler.schedlue(request_or_item)
-            await asyncio.sleep(0.002)
             if isinstance(request_or_item, Item):
-                self._hand_piplines(self.spider, request_or_item, paralleled=pipline_is_paralleled)
-
-            can_stop = self._check_can_stop(None)
-            if can_stop:
-                # there is no request and the task has been completed.so ended
-                self.log.debug(
-                    f" here is no request and the task has been completed.so  engine will stop ..")
-                self.stop = True
-                break
+                self._hand_piplines(self.spider, request_or_item, paralleled=self.pipline_is_paralleled)
+            request = await self.scheduler.async_get()
+            setattr(request, "__spider__", self.spider)
+            self.work_tasks.append(self.downloader.download(request))
+            if len(self.work_tasks) > 0:
+                results = await asyncio.gather(
+                    *self.work_tasks, return_exceptions=True
+                )
+                for task_result in results:
+                    if not isinstance(task_result, RuntimeError) and task_result:
+                        resp = task_result
+                        custome_callback = resp.request.callback
+                        if custome_callback:
+                            request_generator = custome_callback(resp)
+                            if request_generator:
+                                self.request_generator_queue.append((custome_callback.__self__, request_generator))
+                self.work_tasks = []
+            self.scheduler.scheduler_container.url_queue.task_done()
             if self.spider.state != "runing":
                 self.spider.state = "runing"
-
-        self.spider.state = "closed"
-        self.reminder.go(Reminder.spider_close, self.spider)
-        self.spider.on_close()
-        # wait some resource to freed
-        await asyncio.sleep(0.3)
-        self.reminder.go(Reminder.engin_close, self)
-        self.log.debug(f" engine stoped..")
-
-    async def work(self):
-        while not self.stop:
-            if not self.is_single:
-                if len(self.task_dict) > 2000:
-                    await asyncio.sleep(0.03)
-            if not self.is_single and self.scheduler.scheduler_container.size() <= 10:
-                await asyncio.sleep(0.06)
-            request = self.scheduler.get()
-            if isinstance(request, Request):
-                setattr(request, "__spider__", self.spider)
-                self.reminder.go(Reminder.request_scheduled, request)
-                self._ensure_future(request)
-            resp = self.downloader.get()
-            if resp is None:
-                # let the_downloader can be scheduled, test 0.001-0.0006 is better
-                # uniform = random.uniform(0.0001, 0.006)
-                # await asyncio.sleep(0.0005)
-                if not self.is_single:
-                    # 分布式爬虫 此处可以把更多的任务放在共享队列里
-                    await asyncio.sleep(0.017)
-                else:
-                    # 单机的话 拼命调度
-                    await asyncio.sleep(0.0001)
-                continue
-            custome_callback = resp.request.callback
-            if custome_callback:
-                request_generator = custome_callback(resp)
-                if request_generator:
-                    self.request_generator_queue.append((custome_callback.__self__, request_generator))
 
     def pause(self):
         # self.log.info(f" out called pause.. so engine will pause.. ")
@@ -222,8 +223,10 @@ class Engine:
             return False
         if len(self.request_generator_queue) > 0:
             return False
-        if self.downloader.response_queue.qsize() > 0:
+        if len(self.work_tasks) > 0:
             return False
+        # if self.downloader.response_queue.qsize() > 0:
+        #     return False
         if len(self.request_generator_queue) > 0 and self.scheduler.scheduler_container.size() > 0:
             return False
         if self.scheduler.scheduler_container.size() > 0:

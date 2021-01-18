@@ -5,6 +5,7 @@
 # Date:      2020/12/21
 # Desc:      there is a python file description
 # ------------------------------------------------------------------
+import asyncio
 from collections import deque
 from typing import Optional
 
@@ -67,18 +68,24 @@ class SampleDuplicateFilter(BaseDuplicateFilter):
 class DequeSchedulerContainer(BaseSchedulerContainer):
 
     def __init__(self):
-        self.url_queue = deque()
+        self.url_queue = asyncio.Queue()
 
     def push(self, request: Request):
-        self.url_queue.append(request)
+        self.url_queue.put_nowait(request)
+        # self.url_queue.append(request)
 
     def pop(self) -> Optional[Request]:
         if self.url_queue:
-            return self.url_queue.popleft()
+            return self.url_queue.get_nowait()
+            # return self.url_queue.popleft()
         return None
 
+    async def async_pop(self) -> Optional[Request]:
+        req = await self.url_queue.get()
+        return req
+
     def size(self) -> int:
-        return len(self.url_queue)
+        return self.url_queue.qsize()
 
 
 class Scheduler:
@@ -105,3 +112,11 @@ class Scheduler:
     def get(self) -> Optional[Request]:
         self.log.debug(f"get a request to download task ")
         return self.scheduler_container.pop()
+
+    def size(self)->int:
+        return self.scheduler_container.size()
+
+    async def async_get(self) -> Optional[Request]:
+        self.log.debug(f"get a request to download task ")
+        res = await self.scheduler_container.async_pop()
+        return res

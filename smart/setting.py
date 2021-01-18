@@ -12,7 +12,7 @@ gloable_setting_dict = {
     # request timeout 10 s
     "req_timeout": 10,
     # 每个爬虫的请求并发数
-    "req_per_concurrent": 100,
+    "req_per_concurrent": 500,
     # 每个请求的最大重试次数
     "req_max_retry": 3,
     # 默认请求头
