@@ -19,6 +19,7 @@ from smart.middlewire import Middleware
 from smart.response import Response
 from smart.scheduler import Scheduler
 from smart.setting import gloable_setting_dict
+from smart.signal import Reminder
 from .request import Request
 
 
@@ -32,6 +33,7 @@ class BaseDown(ABC):
 class AioHttpDown(BaseDown):
 
     async def fetch(self, request: Request) -> Response:
+        print('run')
         session = None
         resp = None
         try:
@@ -64,8 +66,10 @@ class AioHttpDown(BaseDown):
 
 class Downloader:
 
-    def __init__(self, scheduler: Scheduler, middwire: Middleware = None, seq=100, downer: BaseDown = AioHttpDown()):
+    def __init__(self, scheduler: Scheduler, middwire: Middleware = None, reminder=None, seq=100,
+                 downer: BaseDown = AioHttpDown()):
         self.log = log
+        self.reminder = reminder
         self.scheduler = scheduler
         self.middwire = middwire
         self.response_queue: asyncio.Queue = Queue()
@@ -92,9 +96,9 @@ class Downloader:
         ignore_response_codes = spider.cutome_setting_dict.get("ignore_response_codes") or gloable_setting_dict.get(
             "ignore_response_codes")
         req_delay = spider.cutome_setting_dict.get("req_delay") or gloable_setting_dict.get("req_delay")
-
         if request and request.retry >= max_retry:
             # reached max retry times
+            self.reminder.go(Reminder.request_dropped, request, scheduler=self.scheduler)
             self.log.error(f'reached max retry times... {request}')
             return
         request.retry = request.retry + 1
@@ -141,7 +145,7 @@ class Downloader:
                         'that is a no-null response, and response must be a '
                         'smart.Response instance or sub Response instance.  ')
                     return
-
+                # self.reminder.go(Reminder.response_downloaded, response)
                 if response.status not in ignore_response_codes:
                     await self._after_fetch(request, response)
 
@@ -149,10 +153,15 @@ class Downloader:
             response.request = request
             response.__spider__ = spider
             await self.response_queue.put(response)
+        return response
 
     def get(self) -> Optional[Response]:
         with suppress(QueueEmpty):
-            return self.response_queue.get_nowait()
+            response = self.response_queue.get_nowait()
+            if response:
+                # self.reminder.go(Reminder.response_received, response)
+                pass
+            return response
 
     async def _before_fetch(self, request):
         if self.middwire and len(self.middwire.request_middleware) > 0:

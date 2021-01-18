@@ -13,7 +13,7 @@ from smart.field import RegexField, BaseField, HtmlField
 from smart.item import Item
 from smart.request import Request
 from smart.response import Response
-from smart.tool import is_valid_url
+from smart.tool import is_valid_url, mutations_bkdr_hash
 
 
 class TestItem(Item):
@@ -23,6 +23,9 @@ class TestItem(Item):
 
     def clean_age(self, value):
         return value
+
+
+
 
 
 class TestClassOne(object):
@@ -43,3 +46,12 @@ class TestClassOne(object):
 
     def test3(self):
         print(is_valid_url("http://www.baidu.com"))
+
+    def test4(self, *args):
+        for i in range(100):
+            print(hash("http://exercise.kingname.info/exercise_middleware_ip/1:0"))
+
+    def test5(self):
+        print("\r\n")
+        x = "22李思32sss;'*&^%%$##@#@!是S2.。 s s" * 100000
+        print(mutations_bkdr_hash(x))

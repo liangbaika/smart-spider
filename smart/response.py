@@ -88,7 +88,7 @@ class Response:
     def content_type(self) -> Optional[str]:
         if self.headers:
             for key in self.headers.keys():
-                if "content_type" == key.lower():
+                if "content_type" == key.lower() or "content-type" == key.lower():
                     return self.headers.get(key)
         return None
 

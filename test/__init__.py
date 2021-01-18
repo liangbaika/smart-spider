@@ -15,7 +15,7 @@ class ReqInte:
     @staticmethod
     @middleware2.request(-1)
     def print_on_request1(spider_ins, request):
-        print(f"ReqInteReqInteReqInteReqInt{spider_ins.name} e#{request}######################")
+        print(f"###############{spider_ins.name} e#{request}######################")
 
 
 @middleware2.request(1)

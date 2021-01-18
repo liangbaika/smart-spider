@@ -1,9 +1,13 @@
+import asyncio
 import json
 import threading
+
+from aiohttp import ClientSession
 
 from smart.item import Item
 from smart.response import Response
 from smart.request import Request
+from smart.signal import reminder
 from smart.spider import Spider
 
 
@@ -15,18 +19,26 @@ class TestItem(Item):
 class IpSpider(Spider):
     name = 'ipspider2'
     start_urls = []
-    cutome_setting_dict = {**Spider.cutome_setting_dict, **{"req_per_concurrent": 100}}
+    cutome_setting_dict = {**Spider.cutome_setting_dict,
+                           # **{
+                           #     "duplicate_filter_class": "spiders.distributed.RedisBaseDuplicateFilter",
+                           #     "scheduler_container_class": "spiders.distributed.RedisSchuler",
+                           #     "is_single": 0,
+                           # }
+                           }
 
     def start_requests(self):
-        for page in range(100):
+        for page in range(1010):
             url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
-            # url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
-            # url = 'http://fzggw.zj.gov.cn/art/2020/8/26/art_1621004_55344873.html'
-            url = 'https://s.bdstatic.com/common/openjs/amd/eslx.js'
-            yield Request(url, callback=self.parse, dont_filter=True, timeout=3)
+            yield Request(url, callback=self.parse, dont_filter=False, timeout=9)
 
     def parse(self, response: Response):
-        pass
+        print(response.status)
+        # item = TestItem.get_item("")
+        # yield item
+
+        # for i in range(1000):
+        #     yield Request(url="https://www.baidu.com?q=" + str(i), callback=self.parse2)
         # yield TestItem(response.text)
         # for page in range(10):
         #     print(page)

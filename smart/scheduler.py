@@ -24,6 +24,10 @@ class BaseSchedulerContainer(ABC):
     def pop(self) -> Optional[Request]:
         pass
 
+    @abstractmethod
+    def size(self) -> int:
+        pass
+
 
 class BaseDuplicateFilter(ABC):
 
@@ -47,12 +51,12 @@ class SampleDuplicateFilter(BaseDuplicateFilter):
 
     def add(self, url):
         if url:
-            self.set_container.add(hash(url))
+            self.set_container.add(url)
 
     def contains(self, url):
         if not url:
             return False
-        if hash(url) in self.set_container:
+        if url in self.set_container:
             return True
         return False
 
@@ -61,6 +65,7 @@ class SampleDuplicateFilter(BaseDuplicateFilter):
 
 
 class DequeSchedulerContainer(BaseSchedulerContainer):
+
     def __init__(self):
         self.url_queue = deque()
 
@@ -71,6 +76,9 @@ class DequeSchedulerContainer(BaseSchedulerContainer):
         if self.url_queue:
             return self.url_queue.popleft()
         return None
+
+    def size(self) -> int:
+        return len(self.url_queue)
 
 
 class Scheduler:

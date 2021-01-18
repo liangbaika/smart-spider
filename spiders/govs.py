@@ -29,7 +29,12 @@ class GovsSpider(Spider):
     start_urls = [
         "http://www.nea.gov.cn/policy/jd.htm"
     ]
-
+    cutome_setting_dict = {**Spider.cutome_setting_dict,
+                           # **{
+                           #     "req_delay": 3,
+                           #     "req_per_concurrent": 3,
+                           # }
+                           }
 
     def parse(self, response: Response):
         selects_detail_urls = response.xpath(

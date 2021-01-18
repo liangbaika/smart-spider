@@ -16,7 +16,7 @@ from typing import List
 from urllib.request import urlopen
 
 from smart.log import log
-from smart.core import Engine
+from smart.core2 import Engine
 from smart.middlewire import Middleware
 from smart.pipline import Piplines
 from smart.setting import gloable_setting_dict

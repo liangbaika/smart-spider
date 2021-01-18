@@ -36,6 +36,10 @@ gloable_setting_dict = {
     "thread_pool_max_size": 50,
     # 根据响应的状态码 忽略以下响应
     "ignore_response_codes": [401, 403, 404, 405, 500, 502, 504],
+    # 是否是分布式爬虫
+    "is_single": 1,
+    # pipline之间 处理item 是否并行处理 默认  0 串行   1 并行
+    "pipline_is_paralleled": 0,
     # 启动时网络是否畅通检查地址
     "net_healthy_check_url": "https://www.baidu.com",
     # log level

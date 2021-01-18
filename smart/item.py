@@ -12,7 +12,6 @@ import inspect
 from typing import Any, Union
 
 from lxml import etree
-from ruia.exceptions import InvalidFuncType
 
 from smart.field import BaseField, RegexField, FuncField
 

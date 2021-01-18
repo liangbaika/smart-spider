@@ -1,3 +1,4 @@
+import hashlib
 import re
 import socket
 import urllib
@@ -48,3 +49,35 @@ def get_localhost_ip():
             s.close()
 
     return ip
+
+
+def get_md5(*args):
+    """
+    @summary: 获取唯一的32位md5
+    ---------
+    @param *args: 参与联合去重的值
+    ---------
+    @result: 7c8684bcbdfcea6697650aa53d7b1405
+    """
+
+    m = hashlib.md5()
+    for arg in args:
+        m.update(str(arg).encode())
+
+    return m.hexdigest()
+
+
+# mutations
+def mutations_bkdr_hash(value: str):
+    if value is None:
+        value = ''
+    if not isinstance(value, str):
+        value = str(value)
+    if len(value) >= 10000:
+        value = get_md5(value)
+
+    seed = 131
+    h = 0
+    for v in value:
+        h = seed * h + ord(v)
+    return h & 0x7FFFFFFF

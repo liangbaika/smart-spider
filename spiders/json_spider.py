@@ -10,6 +10,7 @@ import traceback
 
 from smart.field import JsonPathField, RegexField
 from smart.item import Item
+from smart.request import Request
 from smart.response import Response
 from smart.spider import Spider
 
@@ -33,4 +34,7 @@ class JsonSpider(Spider):
     ]
 
     def parse(self, response: Response):
+        for i in range(300):
+            yield  Request(url=response.url,dont_filter=True)
         yield from BidItem.get_items(response.text)
+

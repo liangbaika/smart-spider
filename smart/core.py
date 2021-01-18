@@ -8,6 +8,7 @@
 import asyncio
 import importlib
 import inspect
+import time
 import uuid
 from asyncio import Lock
 from collections import deque
@@ -105,7 +106,6 @@ class Engine:
             if self.lock and self.lock.locked():
                 await asyncio.sleep(1)
                 continue
-
             request_or_item = next(self.iter_request())
             if isinstance(request_or_item, Request):
                 self.scheduler.schedlue(request_or_item)
@@ -191,12 +191,27 @@ class Engine:
             return False
         if len(self.task_dict) > 0:
             return False
-        if len(self.request_generator_queue) > 0:
+        if len(self.pip_task_dict) > 0:
+            return False
+        if len(self.request_generator_queue) > 0 and self.scheduler.scheduler_container.size() > 0:
             return False
         if self.downloader.response_queue.qsize() > 0:
             return False
-        if len(self.pip_task_dict) > 0:
+        if self.scheduler.scheduler_container.size() > 0:
             return False
+        start = time.time()
+        while 1:
+            end = time.time()
+            if (end - start) > 1.0:
+                print("空转 超过10s 停止")
+                break
+            if self.scheduler.scheduler_container.size() <= 0:
+                time.sleep(0.05)
+            else:
+                return False
+
+            pass
+
         return True
 
     def _hand_piplines(self, spider_ins, item, index=0):
