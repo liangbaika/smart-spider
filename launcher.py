@@ -67,67 +67,67 @@ def start1():
     starter = CrawStater()
     starter.run_single(IpSpider(), middlewire=middleware2, pipline=piplinestest)
 
-#
-# @reminder.spider_start.connect
-# def test1(sender, **kwargs):
-#     print("spider_start1")
-#     return 1222222
-#
-#
-# @reminder.spider_start.connect
-# def test221(sender, **kwargs):
-#     print("spider_start2")
-#     return 33333333
-#
-#
-# @reminder.spider_execption.connect
-# def test2(sender, **kwargs):
-#     print("spider_execption")
-#
-#
-# @reminder.spider_close.connect
-# def tes3t(sender, **kwargs):
-#     print("spider_close")
-#
-#
-# @reminder.engin_start.connect
-# def test4(sender, **kwargs):
-#     print("engin_start")
-#
-#
-# @reminder.engin_idle.connect
-# def test5(sender, **kwargs):
-#     print("engin_idle")
-#
-#
-# @reminder.engin_close.connect
-# def test6(sender, **kwargs):
-#     print("engin_close")
-#
-#
-# @reminder.request_dropped.connect
-# def test7(sender, **kwargs):
-#     print("spider_start")
-#
-#
-# @reminder.request_scheduled.connect
-# def test8(sender, **kwargs):
-#     print("request_scheduled")
-#
-#
-# @reminder.response_received.connect
-# def test9(sender, **kwargs):
-#     print("response_received")
-#
-#
-# @reminder.response_downloaded.connect
-# def test10(sender, **kwargs):
-#     print("response_downloaded")
-#
-#
-# @reminder.item_dropped.connect
-# def test11(sender, **kwargs):
-#     print("spider_start")
+
+@reminder.spider_start.connect
+def test1(sender, **kwargs):
+    print("spider_start1")
+    return 1222222
+
+
+@reminder.spider_start.connect
+def test221(sender, **kwargs):
+    print("spider_start2")
+    return 33333333
+
+
+@reminder.spider_execption.connect
+def test2(sender, **kwargs):
+    print("spider_execption")
+
+
+@reminder.spider_close.connect
+def tes3t(sender, **kwargs):
+    print("spider_close")
+
+
+@reminder.engin_start.connect
+def test4(sender, **kwargs):
+    print("engin_start")
+
+
+@reminder.engin_idle.connect
+def test5(sender, **kwargs):
+    print("engin_idle")
+
+
+@reminder.engin_close.connect
+def test6(sender, **kwargs):
+    print("engin_close")
+
+
+@reminder.request_dropped.connect
+def test7(sender, **kwargs):
+    print("spider_start")
+
+
+@reminder.request_scheduled.connect
+def test8(sender, **kwargs):
+    print("request_scheduled")
+
+
+@reminder.response_received.connect
+def test9(sender, **kwargs):
+    print("response_received")
+
+
+@reminder.response_downloaded.connect
+def test10(sender, **kwargs):
+    print("response_downloaded")
+
+
+@reminder.item_dropped.connect
+def test11(sender, **kwargs):
+    print("spider_start")
 
 
 if __name__ == '__main__':
@@ -142,6 +142,6 @@ if __name__ == '__main__':
     )
 
     spider = IpSpider()
-    # starter.run_many([spider], middlewire=middleware2, pipline=piplinestest)
-    starter.run_many([spider])
+    starter.run_many([spider], middlewire=middleware2, pipline=piplinestest)
+    # starter.run_many([spider])
 

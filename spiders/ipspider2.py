@@ -30,12 +30,12 @@ class IpSpider(Spider):
     def start_requests(self):
         for page in range(1000):
             url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
-            yield Request(url, callback=self.parse, dont_filter=False, timeout=9)
+            yield Request(url, callback=self.parse, dont_filter=True, timeout=9)
 
     def parse(self, response: Response):
         print(response.status)
-        # item = TestItem.get_item("")
-        # yield item
+        item = TestItem.get_item("")
+        yield item
 
         # for i in range(1000):
         #     yield Request(url="https://www.baidu.com?q=" + str(i), callback=self.parse2)
