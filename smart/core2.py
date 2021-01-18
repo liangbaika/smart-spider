@@ -103,13 +103,15 @@ class Engine:
             self.log.debug(f"a task done  ")
             self.task_dict.pop(task._key)
 
+
+
     async def start(self):
         self.spider.on_start()
         self.reminder.go(Reminder.spider_start, self.spider)
         self.reminder.go(Reminder.engin_start, self)
 
         self.request_generator_queue.append((self.spider, iter(self.spider)))
-        asyncio.create_task(self.work())
+        works=[asyncio.ensure_future(self.work()) for i in range(300)]
         pipline_is_paralleled = self.spider.cutome_setting_dict.get("pipline_is_paralleled")
         pipline_is_paralleled = gloable_setting_dict.get(
             "pipline_is_paralleled") if pipline_is_paralleled is None else pipline_is_paralleled
