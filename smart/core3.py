@@ -21,28 +21,36 @@ from smart.pipline import Piplines
 from smart.request import Request
 from smart.scheduler import Scheduler
 from smart.setting import gloable_setting_dict
-from smart.signal import reminder
+from smart.signal import reminder, Reminder
 
 
 class Engine:
     def __init__(self, spider, middlewire=None, pipline: Piplines = None):
         self.lock = None
+        self.reminder = reminder
         self.task_dict: Dict[str, asyncio.Task] = {}
         self.pip_task_dict: Dict[str, asyncio.Task] = {}
         self.spider = spider
         self.middlewire = middlewire
         self.piplines = pipline
-        self.reminder = reminder
         duplicate_filter_class = self._get_dynamic_class_setting("duplicate_filter_class")
         scheduler_container_class = self._get_dynamic_class_setting("scheduler_container_class")
         net_download_class = self._get_dynamic_class_setting("net_download_class")
         self.scheduler = Scheduler(duplicate_filter_class(), scheduler_container_class())
         req_per_concurrent = self.spider.cutome_setting_dict.get("req_per_concurrent") or gloable_setting_dict.get(
             "req_per_concurrent")
-        self.downloader = Downloader(self.scheduler, self.middlewire, seq=req_per_concurrent,reminder=self.reminder,
+        self.downloader = Downloader(self.scheduler, self.middlewire, seq=req_per_concurrent,
+                                     reminder=self.reminder,
                                      downer=net_download_class())
         self.request_generator_queue = deque()
         self.stop = False
+        single = self.spider.cutome_setting_dict.get("is_single")
+        self.is_single = gloable_setting_dict.get("is_single") if single is None else single
+
+        pipline_is_paralleled = self.spider.cutome_setting_dict.get("pipline_is_paralleled")
+        pipline_is_paralleled = gloable_setting_dict.get(
+            "pipline_is_paralleled") if pipline_is_paralleled is None else pipline_is_paralleled
+        self.pipline_is_paralleled = pipline_is_paralleled
         self.log = log
 
     def _get_dynamic_class_setting(self, key):
@@ -64,8 +72,6 @@ class Engine:
                 # execute and get a request from cutomer code
                 # request=real_request_generator.send(None)
                 request_or_item = next(real_request_generator)
-                if isinstance(request_or_item, Request):
-                    request_or_item.__spider__ = spider
             except StopIteration:
                 self.request_generator_queue.popleft()
                 continue
@@ -102,12 +108,19 @@ class Engine:
     async def start(self):
         self.spider.on_start()
         self.request_generator_queue.append((self.spider, iter(self.spider)))
+
+        self.reminder.go(Reminder.spider_start, self.spider)
+        self.reminder.go(Reminder.engin_start, self)
         # core  implenment
         while not self.stop:
             # paused
             if self.lock and self.lock.locked():
                 await asyncio.sleep(1)
                 continue
+            if not self.is_single:
+                if len(self.task_dict) > 2000:
+                    await asyncio.sleep(0.5)
+
             request_or_item = next(self.iter_request())
             if isinstance(request_or_item, Request):
                 self.scheduler.schedlue(request_or_item)
@@ -116,6 +129,11 @@ class Engine:
                 self._hand_piplines(self.spider, request_or_item)
 
             request = self.scheduler.get()
+
+            if isinstance(request, Request):
+                request.__spider__ = self.spider
+                self._ensure_future(request)
+
             can_stop = self._check_can_stop(request)
             if can_stop:
                 # there is no request and the task has been completed.so ended
@@ -123,14 +141,12 @@ class Engine:
                     f" here is no request and the task has been completed.so  engine will stop ..")
                 self.stop = True
                 break
-            if isinstance(request, Request):
-                self._ensure_future(request)
 
             resp = self.downloader.get()
 
             if resp is None:
                 # let the_downloader can be scheduled, test 0.001-0.0006 is better
-                await asyncio.sleep(0.0005)
+                await asyncio.sleep(0.001)
                 continue
 
             custome_callback = resp.request.callback
@@ -143,9 +159,11 @@ class Engine:
                 self.spider.state = "runing"
 
         self.spider.state = "closed"
+        self.reminder.go(Reminder.spider_close, self.spider)
         self.spider.on_close()
         # wait some resource to freed
-        await asyncio.sleep(0.15)
+        self.reminder.go(Reminder.engin_close, self.spider)
+        await asyncio.sleep(0.3)
         self.log.debug(f" engine stoped..")
 
     def pause(self):
@@ -202,18 +220,15 @@ class Engine:
         if self.scheduler.scheduler_container.size() > 0:
             return False
         start = time.time()
-        while 1:
+        while not self.is_single:
             end = time.time()
-            if (end - start) > 1.0:
+            if (end - start) > 10.0:
                 print("空转 超过10s 停止")
                 break
             if self.scheduler.scheduler_container.size() <= 0:
                 time.sleep(0.05)
             else:
                 return False
-
-            pass
-
         return True
 
     def _hand_piplines(self, spider_ins, item, index=0):

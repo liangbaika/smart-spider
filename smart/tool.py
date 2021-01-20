@@ -11,7 +11,8 @@ import socket
 import urllib
 
 # 验证Url 是否合法的正则
-RE_COMPILE = re.compile("(^https?:/{2}\w.+$)|(ftp://)")
+
+RE_COMPILE = re.compile("(^https?:/{2}\w.+$)|(ftp://)|(^ws?:/{2}\w.+$)")
 
 
 def is_valid_url(url):
@@ -109,3 +110,5 @@ def mutations_bkdr_hash(value: str):
     for v in value:
         h = seed * h + ord(v)
     return h & 0x7FFFFFFF
+
+

@@ -16,7 +16,7 @@ from typing import List
 from urllib.request import urlopen
 
 from smart.log import log
-from smart.core2 import Engine
+from smart.core4 import Engine
 from smart.middlewire import Middleware
 from smart.pipline import Piplines
 from smart.setting import gloable_setting_dict
@@ -40,7 +40,7 @@ class CrawStater:
             # avoid a certain extent: too many files error
             loop = loop or asyncio.ProactorEventLoop()
         else:
-            self.loop = loop or asyncio.new_event_loop()
+            loop = loop or asyncio.new_event_loop()
         thread_pool_max_size = gloable_setting_dict.get(
             "thread_pool_max_size", 30)
         loop.set_default_executor(ThreadPoolExecutor(thread_pool_max_size))
@@ -123,8 +123,9 @@ class CrawStater:
             raise ValueError("can not finded spider tasks to start so ended...")
         self._print_info()
         try:
-            group_tasks = asyncio.gather(*tasks, loop=self.loop)
+            group_tasks = asyncio.gather(*tasks, loop=self.loop, return_exceptions=True)
             self.loop.run_until_complete(group_tasks)
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         except CancelledError as e:
             self.log.debug(f" in loop, occured CancelledError e {e} ", exc_info=True)
         except KeyboardInterrupt as e2:

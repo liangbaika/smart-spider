@@ -12,7 +12,7 @@ gloable_setting_dict = {
     # request timeout 10 s
     "req_timeout": 10,
     # 每个爬虫的请求并发数
-    "req_per_concurrent": 100,
+    "req_per_concurrent": 200,
     # 每个请求的最大重试次数
     "req_max_retry": 3,
     # 默认请求头
@@ -29,22 +29,24 @@ gloable_setting_dict = {
     # 请求url调度器容器
     # 自己实现需要继承 BaseSchedulerContainer 实现相关抽象方法  系统默认DequeSchedulerContainer
     "scheduler_container_class": "smart.scheduler.DequeSchedulerContainer",
+    # 调度器
+    "scheduler_class": "smart.scheduler.Scheduler",
     # 请求网络的方法  输入 request  输出 response
     # 自己实现需要继承 BaseDown 实现相关抽象方法  系统默认AioHttpDown
     "net_download_class": "smart.downloader.AioHttpDown",
     # 线程池数  当 middwire pipline 有不少耗时的同步方法时 适当调大
-    "thread_pool_max_size": 50,
+    "thread_pool_max_size": 250,
     # 根据响应的状态码 忽略以下响应
     "ignore_response_codes": [401, 403, 404, 405, 500, 502, 504],
     # 是否是分布式爬虫
     "is_single": 1,
     # pipline之间 处理item 是否并行处理 默认  0 串行   1 并行
-    "pipline_is_paralleled": 0,
+    "pipline_is_paralleled": 1,
     # 启动时网络是否畅通检查地址
     "net_healthy_check_url": "https://www.baidu.com",
     # log level
-    "log_level": "info",
+    "log_level": "debug",
     "log_name": "smart-spider",
     "log_path": ".logs/smart.log",
-    "is_write_to_file": False,
+    "is_write_to_file": True,
 }

@@ -5,7 +5,9 @@
 # Date:      2021/1/15
 # Desc:      gloable sinal trigger
 # ------------------------------------------------------------------
-from blinker import Signal
+from functools import partial
+
+from blinker import Signal, ANY
 
 
 class _Reminder:
@@ -34,6 +36,8 @@ class _Reminder:
 
     def __init__(self, *args, **kwargs):
         pass
+
+
 
     def go(self, signal: Signal, *args, **kwargs):
         """

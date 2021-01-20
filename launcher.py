@@ -4,6 +4,8 @@ import threading
 import time
 from multiprocessing.pool import Pool
 
+from blinker import Signal
+
 from smart.log import log
 from smart.pipline import Piplines
 from smart.runer import CrawStater
@@ -23,13 +25,15 @@ piplinestest = Piplines()
 
 @piplinestest.pipline(1)
 async def do_pip(spider_ins, item):
+    await asyncio.sleep(1)
     print(f"我是item1111111 {item.results}")
     return item
 
 
 @piplinestest.pipline(2)
-def pip2(spider_ins, item):
+async def pip2(spider_ins, item):
     print(f"我是item2222222 {item.results}")
+    await asyncio.sleep(0.5)
     return item
 
 
@@ -136,6 +140,6 @@ if __name__ == '__main__':
     spider2 = JsonSpider()
     js_spider = JsSpider()
     spider = IpSpider()
+    spider22 = IpSpider()
     starter.run_many([spider], middlewire=middleware2, pipline=piplinestest)
     # starter.run_many([spider])
-

@@ -35,4 +35,4 @@ def print_on_response(spider_ins, request, response):
         global succedd
         succedd += 1
     print(f"response0: {response.status}")
-    print(f"succedd: {succedd}")
+    print(f"succedd: spider_ins {id(spider_ins)} {succedd}")

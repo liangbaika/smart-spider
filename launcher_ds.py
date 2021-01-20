@@ -28,7 +28,7 @@ async def do_pip(spider_ins, item):
 
 
 @piplinestest.pipline(2)
-def pip2(spider_ins, item):
+async def pip2(spider_ins, item):
     print(f"我是item2222222 {item.results}")
     return item
 
@@ -138,10 +138,10 @@ if __name__ == '__main__':
     gloable_setting_dict.update(
         duplicate_filter_class="spiders.distributed.RedisBaseDuplicateFilter",
         scheduler_container_class="spiders.distributed.RedisSchuler",
-        pipline_is_paralleled=1
+        pipline_is_paralleled=1,
+        is_single=0,
     )
 
     spider = IpSpider()
     starter.run_many([spider], middlewire=middleware2, pipline=piplinestest)
     # starter.run_many([spider])
-

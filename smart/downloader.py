@@ -14,6 +14,8 @@ from typing import Optional
 import aiohttp
 from concurrent.futures import TimeoutError
 
+from aiohttp import TCPConnector
+
 from smart.log import log
 from smart.middlewire import Middleware
 from smart.response import Response
@@ -33,14 +35,12 @@ class BaseDown(ABC):
 class AioHttpDown(BaseDown):
 
     async def fetch(self, request: Request) -> Response:
-        print('run')
-        session = None
-        resp = None
+        session, resp = None, None
         try:
-            session = request.session or aiohttp.ClientSession()
+            session = request.session or aiohttp.ClientSession(connector=TCPConnector(limit=1))
             resp = await session.request(request.method,
                                          request.url,
-                                         timeout=request.timeout or 10,
+                                         timeout=request.timeout,
                                          headers=request.header or {},
                                          cookies=request.cookies or {},
                                          data=request.data or {},
@@ -127,7 +127,9 @@ class Downloader:
                             .run_in_executor(None, fetch, request)
                 except TimeoutError as e:
                     # delay retry
-                    self.scheduler.schedlue(request)
+                    wait = self.scheduler.schedlue(request)
+                    if inspect.isawaitable(wait):
+                        await wait
                     self.log.debug(
                         f'req  to fetch is timeout now so this req will dely to sechdule for retry {request.url}')
                     return
@@ -158,6 +160,7 @@ class Downloader:
             response = self.response_queue.get_nowait()
             if response:
                 self.reminder.go(Reminder.response_received, response)
+                self.response_queue.task_done()
             return response
 
     async def _before_fetch(self, request):

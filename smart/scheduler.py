@@ -5,6 +5,9 @@
 # Date:      2020/12/21
 # Desc:      request scheduler, request filter
 # ------------------------------------------------------------------
+import asyncio
+import inspect
+import time
 from collections import deque
 from typing import Optional, Any
 
@@ -12,6 +15,8 @@ from smart.log import log
 from smart.request import Request
 
 from abc import ABC, abstractmethod
+
+from smart.tool import mutations_bkdr_hash
 
 
 class BaseSchedulerContainer(ABC):
@@ -62,12 +67,12 @@ class SampleDuplicateFilter(BaseDuplicateFilter):
 
     def add(self, url):
         if url:
-            self.set_container.add(url)
+            self.set_container.add(mutations_bkdr_hash(url))
 
     def contains(self, url):
         if not url:
             return False
-        if url in self.set_container:
+        if mutations_bkdr_hash(url) in self.set_container:
             return True
         return False
 
@@ -95,7 +100,41 @@ class DequeSchedulerContainer(BaseSchedulerContainer):
         return len(self.url_queue)
 
 
-class Scheduler:
+class AsyncQequeSchedulerContainer(BaseSchedulerContainer):
+    """
+    deque 保存request
+    """
+
+    def __init__(self):
+        self.url_queue = asyncio.Queue()
+
+    async def push(self, request: Request):
+        await self.url_queue.put(request)
+
+    async def pop(self) -> Optional[Request]:
+        res = await self.url_queue.get()
+        self.url_queue.task_done()
+        return res
+
+    def size(self) -> int:
+        return self.url_queue.qsize()
+
+
+class BaseScheduler(ABC):
+    """
+    请求调度器基类
+    """
+
+    @abstractmethod
+    def schedlue(self, request: Request) -> bool:
+        pass
+
+    @abstractmethod
+    def get(self) -> Optional[Request]:
+        pass
+
+
+class Scheduler(BaseScheduler):
     """
     请求调度器
     """
@@ -111,7 +150,7 @@ class Scheduler:
         self.scheduler_container = scheduler_container or DequeSchedulerContainer()
         self.log = log
 
-    def schedlue(self, request: Request):
+    def schedlue(self, request: Request) -> bool:
         """
         将请求放入 scheduler_container容器
         :param request: 请求
@@ -124,9 +163,12 @@ class Scheduler:
             _url = request.url + ":" + str(request.retry)
             if self.duplicate_filter.contains(_url):
                 self.log.debug(f"duplicate_filter filted ... url{_url} ")
-                return
+                return False
             self.duplicate_filter.add(_url)
-        self.scheduler_container.push(request)
+        push = self.scheduler_container.push(request)
+        if inspect.isawaitable(push):
+            asyncio.create_task(push)
+        return True
 
     def get(self) -> Optional[Request]:
         """
@@ -135,4 +177,62 @@ class Scheduler:
         :return: Optional[Request]
         """
         self.log.debug(f"get a request to download task ")
-        return self.scheduler_container.pop()
+        pop = self.scheduler_container.pop()
+        if pop is None:
+            return None
+
+        if inspect.isawaitable(pop):
+            # todo 同步代码里怎么等待 执行异步协程代码的结果？
+            task = asyncio.create_task(pop)
+            return task
+        else:
+            return pop
+
+
+class AsyncScheduler(BaseScheduler):
+    """
+    请求调度器
+    """
+
+    def __init__(self, duplicate_filter: BaseDuplicateFilter = None,
+                 scheduler_container: BaseSchedulerContainer = None):
+        """
+        初始方法
+        :param duplicate_filter: 去重器对象
+        :param scheduler_container: 调度容器对象
+        """
+        self.duplicate_filter = duplicate_filter or SampleDuplicateFilter()
+        self.scheduler_container = scheduler_container or AsyncQequeSchedulerContainer()
+        self.log = log
+
+    async def schedlue(self, request: Request) -> bool:
+        """
+        将请求放入 scheduler_container容器
+        :param request: 请求
+        :return: None
+        """
+        self.log.debug(f"get a request {request} wating toschedlue ")
+        # dont_filter=true的请求不过滤
+        if not request.dont_filter:
+            # retry 失败的 重试实现延迟调度
+            _url = request.url + ":" + str(request.retry)
+            if self.duplicate_filter.contains(_url):
+                self.log.debug(f"duplicate_filter filted ... url{_url} ")
+                return False
+            self.duplicate_filter.add(_url)
+        push = self.scheduler_container.push(request)
+        if inspect.isawaitable(push):
+            await push
+        return True
+
+    async def get(self) -> Optional[Request]:
+        """
+        从scheduler_container容器获取一个请求对象
+        可能为空
+        :return: Optional[Request]
+        """
+        self.log.debug(f"get a request to download task ")
+        req = self.scheduler_container.pop()
+        if inspect.isawaitable(req):
+            req = await req
+        return req

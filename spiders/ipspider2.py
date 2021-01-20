@@ -25,17 +25,24 @@ class IpSpider(Spider):
                            #     "scheduler_container_class": "spiders.distributed.RedisSchuler",
                            #     "is_single": 0,
                            # }
+                           **{
+                               # "scheduler_container_class": "smart.scheduler.AsyncQequeSchedulerContainer",
+                               # # # 调度器
+                               # "scheduler_class": "smart.scheduler.AsyncScheduler",
+                           }
                            }
 
     def start_requests(self):
-        for page in range(1000):
+        for page in range(100):
             url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
             yield Request(url, callback=self.parse, dont_filter=False, timeout=9)
 
     def parse(self, response: Response):
-        print(response.status)
+        print(response.text)
         item = TestItem.get_item("")
-        yield item
+        # yield item
+        # yield Request(url=response.url + "2", callback=self.parse2, dont_filter=False, timeout=9)
+        # yield item
 
         # for i in range(1000):
         #     yield Request(url="https://www.baidu.com?q=" + str(i), callback=self.parse2)
@@ -53,6 +60,8 @@ class IpSpider(Spider):
     def parse2(self, response):
         print(response.status)
         print("parse2222")
+        item = TestItem.get_item("")
+        yield item
 
     def on_close(self):
         print('我被关闭了')
