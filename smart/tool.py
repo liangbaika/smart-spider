@@ -102,13 +102,13 @@ def mutations_bkdr_hash(value: str):
         value = ''
     if not isinstance(value, str):
         value = str(value)
-    if len(value) >= 10000:
-        value = get_md5(value)
+    value = get_md5(value)
+    return value
 
-    seed = 131
-    h = 0
-    for v in value:
-        h = seed * h + ord(v)
-    return h & 0x7FFFFFFF
+    # seed = 131
+    # h = 0
+    # for v in value:
+    #     h = seed * h + ord(v)
+    # return h & 0x7FFFFFFF
 
 

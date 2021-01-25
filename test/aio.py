@@ -24,7 +24,7 @@ async def fetch(url):
 
 async def do():
     tasks = []
-    for page in range(1000):
+    for page in range(100):
         url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
         url = "https://www.baidu.com?q=" + str(page)
         task = asyncio.ensure_future(fetch(url))
@@ -35,10 +35,19 @@ async def do():
         print(t.result())
 
 
+async def gennum():
+    yield 1
+
+
+async def aaa():
+    x = gennum()
+    print(x)
+
+
 if __name__ == '__main__':
     start = time.time()
     loop = asyncio.ProactorEventLoop()
-    loop.run_until_complete(do())
+    loop.run_until_complete(aaa())
     end = time.time()
     print('花费')
     print(end - start)

@@ -51,7 +51,6 @@ class Engine:
                                      downer=net_download_class())
         self.request_generator_queue = deque()
         self.stop = False
-        self.condition = asyncio.Condition()
         self.item_queue = asyncio.Queue()
         pipline_is_paralleled = self.spider.cutome_setting_dict.get("pipline_is_paralleled")
         pipline_is_paralleled = gloable_setting_dict.get(
@@ -60,6 +59,8 @@ class Engine:
 
         self.lock1 = asyncio.Lock()
         self.lock2 = asyncio.Lock()
+        self.condition = asyncio.Condition(self.lock1)
+        self.cosomer = asyncio.Condition(self.lock1)
 
     def _get_dynamic_class_setting(self, key):
         class_str = self.spider.cutome_setting_dict.get(key) or gloable_setting_dict.get(key)
@@ -117,8 +118,8 @@ class Engine:
         self.reminder.go(Reminder.engin_start, self)
 
         self.request_generator_queue.append((self.spider, iter(self.spider)))
-        handle_items = [asyncio.ensure_future(self.handle_item()) for _ in range(50)]
-        works = [asyncio.ensure_future(self.work()) for _ in range(50)]
+        handle_items = [asyncio.ensure_future(self.handle_item()) for _ in range(11)]
+        works = [asyncio.ensure_future(self.work()) for _ in range(11)]
         while not self.stop:
             # 是否暂停了
             if self.lock and self.lock.locked():
@@ -126,7 +127,7 @@ class Engine:
                 continue
             # 若是分布式爬虫 让内存里的任务不过堆积过多 尽量均分给其他机器
             if self.is_single:
-                if len(self.task_dict) > 1500:
+                if len(self.task_dict) > 2500:
                     await asyncio.sleep(0.3)
             waited, wait = False, None
             user_func_res = next(self.iter_request())
@@ -138,16 +139,22 @@ class Engine:
             if wait is not None and inspect.isawaitable(wait):
                 waited = True
                 await wait
-            if not waited:
-                await asyncio.sleep(0.001)
-            can_stop = await self._check_can_stop(None)
-            if can_stop:
+
+            # await asyncio.sleep(0.001)
+            if self._check_can_stop(None):
                 # there is no request and the task has been completed.so ended
                 self.log.debug(" here is no request and the task has been completed.so  engine will stop ..")
                 self.stop = True
                 break
             if self.spider.state != "runing":
                 self.spider.state = "runing"
+
+            if user_func_res is None:
+                async with self.condition:
+                    if not len(self.condition._waiters) > 0 and len(self.request_generator_queue) <= 0:
+                        print('挂起')
+                        await self.condition.wait()
+                        print('醒了')
 
             # if not waited:
             #     await asyncio.sleep(0.001)
@@ -166,11 +173,16 @@ class Engine:
         seed = False
         while not self.stop:
             waited = False
+            print("work")
             request = self.scheduler.get()
+            # if request is None or len(self.condition._waiters)>0:
+
             if inspect.isawaitable(request):
                 waited = True
                 request = await request
             resp = None
+
+
             if isinstance(request, Request):
                 setattr(request, "__spider__", self.spider)
                 self.reminder.go(Reminder.request_scheduled, request)
@@ -178,28 +190,29 @@ class Engine:
                 #     resp = await self._ensure_future_special(request)
                 # else:
                 #     self._ensure_future(request)
-                if waited:
-                    resp = await self._ensure_future_special(request)
-                else:
-                    self._ensure_future(request)
+                self._ensure_future(request)
             _resp = self.downloader.get()
             if not resp:
                 resp = _resp
 
             if resp is None:
+                if len(self.condition._waiters) > 0:
+                    async with self.condition:
+                        self.condition.notify()
+                # pass
                 if not waited:
-                    await asyncio.sleep(0.004)
+                    await asyncio.sleep(0.1)
                 # let the_downloader can be scheduled, test 0.001-0.0006 is better
                 # uniform = random.uniform(0.0001, 0.006)
-                if not seed:
-                    await asyncio.sleep(0.03)
+                # if not seed:
+                #     await asyncio.sleep(0.03)
                 seed = not seed
                 continue
             custome_callback = resp.request.callback
             if custome_callback:
                 request_generator = custome_callback(resp)
                 if request_generator:
-                    self.request_generator_queue.append((custome_callback.__self__, request_generator))
+                    self.request_generator_queue.append((self.spider, request_generator))
 
     @staticmethod
     async def cancel_all_tasks():
@@ -258,7 +271,7 @@ class Engine:
             except BaseException:
                 pass
 
-    async def _check_can_stop(self, request):
+    def _check_can_stop(self, request):
         if request:
             return False
         if len(self.task_dict) > 0:
@@ -271,12 +284,9 @@ class Engine:
             return False
         if self.downloader.response_queue.qsize() > 0:
             return False
-        size = self.scheduler.scheduler_container.size()
-        if inspect.isawaitable(size):
-            size = await size
-        if len(self.request_generator_queue) > 0 and size > 0:
+        if len(self.request_generator_queue) > 0 and self.scheduler.scheduler_container.size() > 0:
             return False
-        if size > 0:
+        if self.scheduler.scheduler_container.size() > 0:
             return False
         start = time.time()
         self.reminder.go(Reminder.engin_idle, self)
@@ -325,11 +335,13 @@ class Engine:
 
     async def handle_item(self):
         while not self.stop:
+            print("RRRRRRRRRRR", len(self.condition._waiters))
             if self.item_queue.qsize() <= 0:
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.1)
 
             item = await self.item_queue.get()
-
             self.item_queue.task_done()
             # item = self.item_queue.get_nowait()
             self._hand_piplines(self.spider, item, paralleled=self.pipline_is_paralleled)
+            async with self.condition:
+                self.condition.notify()

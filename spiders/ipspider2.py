@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 import threading
 
 from aiohttp import ClientSession
@@ -27,7 +28,7 @@ class IpSpider(Spider):
                            # }
                            **{
                                # "scheduler_container_class": "smart.scheduler.AsyncQequeSchedulerContainer",
-                               # # # 调度器
+                               # # # # 调度器
                                # "scheduler_class": "smart.scheduler.AsyncScheduler",
                            }
                            }
@@ -35,12 +36,16 @@ class IpSpider(Spider):
     def start_requests(self):
         for page in range(100):
             url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
-            yield Request(url, callback=self.parse, dont_filter=False, timeout=9)
+            yield Request(url, callback=self.parse, dont_filter=False, timeout=3)
 
-    def parse(self, response: Response):
+    async def parse(self, response: Response):
         print(response.text)
+        # seeds=[random.randint(1,1000000) for _ in range(10000)]
+        # for page in  seeds:
+        #     url = f'http://exercise.kingname.info/exercise_middleware_ip/{page}'
+        #     yield Request(url, callback=self.parse2, dont_filter=True, timeout=3)
         item = TestItem.get_item("")
-        # yield item
+        yield item
         # yield Request(url=response.url + "2", callback=self.parse2, dont_filter=False, timeout=9)
         # yield item
 
@@ -57,8 +62,9 @@ class IpSpider(Spider):
         # print(response.status)
         # yield Request(response.url, callback=self.parse2, dont_filter=True)
 
-    def parse2(self, response):
-        print(response.status)
+    async def parse2(self, response):
+        print(response.text)
+
         print("parse2222")
         item = TestItem.get_item("")
         yield item

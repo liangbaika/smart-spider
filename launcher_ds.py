@@ -1,7 +1,9 @@
 import asyncio
 import atexit
+import multiprocessing
 import threading
 import time
+from datetime import datetime
 from multiprocessing.pool import Pool
 
 from smart.log import log
@@ -130,18 +132,28 @@ def xxx(sender, **kwargs):
     print("spider_start")
 
 
-if __name__ == '__main__':
+def main():
     starter = CrawStater()
     spider1 = GovsSpider()
     spider2 = JsonSpider()
     js_spider = JsSpider()
     gloable_setting_dict.update(
-        duplicate_filter_class="spiders.distributed.RedisBaseDuplicateFilter",
-        scheduler_container_class="spiders.distributed.RedisSchuler",
-        pipline_is_paralleled=1,
+        duplicate_filter_class="spiders.distributed.AioRedisBaseDuplicateFilter",
+        scheduler_container_class="spiders.distributed.AioRedisSchuler",
         is_single=0,
     )
-
     spider = IpSpider()
     starter.run_many([spider], middlewire=middleware2, pipline=piplinestest)
+
+
+if __name__ == '__main__':
+    start = time.time()
+    pool = multiprocessing.Pool(4)
+    for i in range(4):
+        pool.apply_async(main)
+    # main()
+    pool.close()
+    pool.join()
+    print(f'结束 花费{time.time() - start}s')
+
     # starter.run_many([spider])

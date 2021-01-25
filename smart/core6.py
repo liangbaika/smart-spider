@@ -138,10 +138,9 @@ class Engine:
             if wait is not None and inspect.isawaitable(wait):
                 waited = True
                 await wait
-            if not waited:
-                await asyncio.sleep(0.001)
-            can_stop = await self._check_can_stop(None)
-            if can_stop:
+
+            await asyncio.sleep(0.001)
+            if self._check_can_stop(None):
                 # there is no request and the task has been completed.so ended
                 self.log.debug(" here is no request and the task has been completed.so  engine will stop ..")
                 self.stop = True
@@ -174,10 +173,6 @@ class Engine:
             if isinstance(request, Request):
                 setattr(request, "__spider__", self.spider)
                 self.reminder.go(Reminder.request_scheduled, request)
-                # if waited:
-                #     resp = await self._ensure_future_special(request)
-                # else:
-                #     self._ensure_future(request)
                 if waited:
                     resp = await self._ensure_future_special(request)
                 else:
@@ -200,6 +195,7 @@ class Engine:
                 request_generator = custome_callback(resp)
                 if request_generator:
                     self.request_generator_queue.append((custome_callback.__self__, request_generator))
+
 
     @staticmethod
     async def cancel_all_tasks():
@@ -258,7 +254,7 @@ class Engine:
             except BaseException:
                 pass
 
-    async def _check_can_stop(self, request):
+    def _check_can_stop(self, request):
         if request:
             return False
         if len(self.task_dict) > 0:
@@ -271,13 +267,11 @@ class Engine:
             return False
         if self.downloader.response_queue.qsize() > 0:
             return False
-        size = self.scheduler.scheduler_container.size()
-        if inspect.isawaitable(size):
-            size = await size
-        if len(self.request_generator_queue) > 0 and size > 0:
+        if len(self.request_generator_queue) > 0 and self.scheduler.scheduler_container.size() > 0:
             return False
-        if size > 0:
-            return False
+        return  True
+        # if self.scheduler.scheduler_container.size() > 0:
+        #     return False
         start = time.time()
         self.reminder.go(Reminder.engin_idle, self)
         while not self.is_single:
@@ -333,3 +327,4 @@ class Engine:
             self.item_queue.task_done()
             # item = self.item_queue.get_nowait()
             self._hand_piplines(self.spider, item, paralleled=self.pipline_is_paralleled)
+

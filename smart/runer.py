@@ -16,7 +16,7 @@ from typing import List
 from urllib.request import urlopen
 
 from smart.log import log
-from smart.core4 import Engine
+from smart.core9 import Engine
 from smart.middlewire import Middleware
 from smart.pipline import Piplines
 from smart.setting import gloable_setting_dict
@@ -113,6 +113,7 @@ class CrawStater:
             self.loop.call_soon_threadsafe(core.recover)
 
     def _run(self):
+        self._print_logo_info()
         start = time.time()
         tasks = []
         for core in self.cores:
@@ -121,10 +122,11 @@ class CrawStater:
             tasks.append(future)
         if len(tasks) <= 0:
             raise ValueError("can not finded spider tasks to start so ended...")
-        self._print_info()
         try:
             group_tasks = asyncio.gather(*tasks, loop=self.loop, return_exceptions=True)
-            self.loop.run_until_complete(group_tasks)
+            complete = self.loop.run_until_complete(group_tasks)
+            if complete and len(complete)>0 and isinstance(complete[0],BaseException):
+                raise complete[0]
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         except CancelledError as e:
             self.log.debug(f" in loop, occured CancelledError e {e} ", exc_info=True)
@@ -136,7 +138,7 @@ class CrawStater:
 
         self.log.info(f'craw succeed {",".join(self.spider_names)} ended.. it cost {round(time.time() - start, 3)} s')
 
-    def _print_info(self):
+    def _print_logo_info(self):
         self.log.info("good luck!")
         self.log.info(
             """
@@ -158,8 +160,8 @@ class CrawStater:
                       " \r\n proverbs: whatever is worth doing is worth doing well."
                       )
 
-    @classmethod
-    def _check_internet_state(cls):
+    def _check_internet_state(self):
+        self.log.info("check internet health")
         error_msg = "internet may not be available please check net, run ended"
         net_healthy_check_url = gloable_setting_dict.get("net_healthy_check_url", None)
         if net_healthy_check_url is None:

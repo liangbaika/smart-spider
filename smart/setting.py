@@ -17,11 +17,9 @@ gloable_setting_dict = {
     "req_max_retry": 3,
     # 默认请求头
     "default_headers": {
-        "Accept": "*/*;",
-        "Accept-Encoding": "gzip, deflate",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
         # 百度搜索引擎爬虫ua
-        "user-agent": "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)"
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36"
     },
     # 请求url 去重处理器
     # 自己实现需要继承 BaseDuplicateFilter 实现相关抽象方法 系统默认SampleDuplicateFilter
@@ -45,8 +43,8 @@ gloable_setting_dict = {
     # 启动时网络是否畅通检查地址
     "net_healthy_check_url": "https://www.baidu.com",
     # log level
-    "log_level": "debug",
+    "log_level": "info",
     "log_name": "smart-spider",
     "log_path": ".logs/smart.log",
-    "is_write_to_file": True,
+    "is_write_to_file": False,
 }

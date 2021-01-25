@@ -162,7 +162,7 @@ class Scheduler(BaseScheduler):
             # retry 失败的 重试实现延迟调度
             _url = request.url + ":" + str(request.retry)
             if self.duplicate_filter.contains(_url):
-                self.log.debug(f"duplicate_filter filted ... url{_url} ")
+                self.log.debug(f"duplicate_filter filted ... url {_url} ")
                 return False
             self.duplicate_filter.add(_url)
         push = self.scheduler_container.push(request)
@@ -182,7 +182,6 @@ class Scheduler(BaseScheduler):
             return None
 
         if inspect.isawaitable(pop):
-            # todo 同步代码里怎么等待 执行异步协程代码的结果？
             task = asyncio.create_task(pop)
             return task
         else:
@@ -216,10 +215,16 @@ class AsyncScheduler(BaseScheduler):
         if not request.dont_filter:
             # retry 失败的 重试实现延迟调度
             _url = request.url + ":" + str(request.retry)
-            if self.duplicate_filter.contains(_url):
+            contains = self.duplicate_filter.contains(_url)
+            if inspect.isawaitable(contains):
+                contains = await contains
+            if contains:
                 self.log.debug(f"duplicate_filter filted ... url{_url} ")
                 return False
-            self.duplicate_filter.add(_url)
+            filter_add = self.duplicate_filter.add(_url)
+            if inspect.isawaitable(filter_add):
+                await filter_add
+
         push = self.scheduler_container.push(request)
         if inspect.isawaitable(push):
             await push

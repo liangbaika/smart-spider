@@ -77,7 +77,6 @@ class Downloader:
         self.semaphore = asyncio.Semaphore(seq)
         # the real to fetch resource from internet
         self.downer = downer
-        self.log.info(f" downer loaded {self.downer.__class__.__name__}")
 
     async def download(self, request: Request):
         spider = request.__spider__
